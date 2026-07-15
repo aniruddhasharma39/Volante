@@ -23,7 +23,7 @@ const SchemaFieldSchema = new Schema({
   description: { type: String },
   isFilterable: { type: Boolean, default: true },
   path: { type: String, required: true }
-}, { _id: false });
+});
 
 const SchemaRegistrySchema: Schema = new Schema(
   {

@@ -29,4 +29,15 @@ export class ReportBuilderController {
       next(error);
     }
   }
+
+  static async updateFilters(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { filters } = req.body;
+      const reportId = req.params.id as string;
+      const report = await ReportBuilderService.updateFilters(reportId, filters);
+      res.status(200).json({ success: true, data: report });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

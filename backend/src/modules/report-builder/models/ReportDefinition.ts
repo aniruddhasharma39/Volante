@@ -1,15 +1,16 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IReportColumn {
-  fieldId: mongoose.Types.ObjectId;
+  fieldId: string;
   displayName: string;
   aggregation?: 'NONE' | 'SUM' | 'AVG' | 'COUNT' | 'MIN' | 'MAX';
   format?: string;
   order: number;
+  sortDirection?: 'ASC' | 'DESC' | 'NONE';
 }
 
 export interface IReportFilter {
-  fieldId: mongoose.Types.ObjectId;
+  fieldId: string;
   operator: 'EQUALS' | 'NOT_EQUALS' | 'CONTAINS' | 'GREATER_THAN' | 'LESS_THAN' | 'IN' | 'BETWEEN';
   value: any;
   isRuntimePrompt: boolean;
@@ -27,15 +28,16 @@ export interface IReportDefinition extends Document {
 }
 
 const ReportColumnSchema = new Schema({
-  fieldId: { type: Schema.Types.ObjectId, required: true },
+  fieldId: { type: String, required: true },
   displayName: { type: String, required: true },
   aggregation: { type: String, enum: ['NONE', 'SUM', 'AVG', 'COUNT', 'MIN', 'MAX'], default: 'NONE' },
   format: { type: String },
-  order: { type: Number, required: true }
+  order: { type: Number, required: true },
+  sortDirection: { type: String, enum: ['ASC', 'DESC', 'NONE'], default: 'NONE' }
 }, { _id: false });
 
 const ReportFilterSchema = new Schema({
-  fieldId: { type: Schema.Types.ObjectId, required: true },
+  fieldId: { type: String, required: true },
   operator: { type: String, enum: ['EQUALS', 'NOT_EQUALS', 'CONTAINS', 'GREATER_THAN', 'LESS_THAN', 'IN', 'BETWEEN'], required: true },
   value: { type: Schema.Types.Mixed },
   isRuntimePrompt: { type: Boolean, default: false }

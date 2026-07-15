@@ -15,4 +15,7 @@ router.post('/', authorize(['scheduler.manage']), SchedulerController.create);
 // Toggle job status
 router.post('/:id/toggle', authorize(['scheduler.manage']), SchedulerController.toggle);
 
+// Update job
+router.put('/:id', authorize(['scheduler.manage']), SchedulerController.update);
+
 export default router;

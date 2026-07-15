@@ -6,6 +6,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.post('/execute/:reportId', ExecutionController.execute);
+router.post('/preview', ExecutionController.preview);
+router.post('/:reportId', ExecutionController.execute);
 
 export default router;

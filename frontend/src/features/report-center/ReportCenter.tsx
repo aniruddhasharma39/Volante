@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
+import { PreviewConsole } from './components/PreviewConsole';
 
 export const ReportCenter = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewReportId, setPreviewReportId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReports();
@@ -24,7 +27,7 @@ export const ReportCenter = () => {
   const handleExport = async (id: string, format: string) => {
     try {
       // We trigger a download natively
-      const token = localStorage.getItem('token');
+      const token = useAuthStore.getState().accessToken;
       const url = `http://localhost:5000/api/v1/report-center/${id}/export?format=${format}`;
       
       // We fetch via API to handle Auth headers, then create an object URL
@@ -98,10 +101,23 @@ export const ReportCenter = () => {
               >
                 PDF
               </button>
+              <button 
+                onClick={() => setPreviewReportId(report._id)}
+                className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+              >
+                View Data
+              </button>
             </div>
           </div>
         ))}
       </div>
+
+      {previewReportId && (
+        <PreviewConsole 
+          reportId={previewReportId} 
+          onClose={() => setPreviewReportId(null)} 
+        />
+      )}
     </div>
   );
 };

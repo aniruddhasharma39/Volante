@@ -5,6 +5,8 @@ import { FieldExplorer } from './components/FieldExplorer';
 import { ReportCanvas } from './components/ReportCanvas';
 import { PropertiesPanel } from './components/PropertiesPanel';
 
+import { PreviewConsole } from '../report-center/components/PreviewConsole';
+
 export const ReportBuilder = () => {
   const [columns, setColumns] = useState<any[]>([]);
   const [selectedColumn, setSelectedColumn] = useState<any | null>(null);
@@ -12,13 +14,13 @@ export const ReportBuilder = () => {
   const [reportName, setReportName] = useState('New Report Template');
   const [saving, setSaving] = useState(false);
   const [schemaContext, setSchemaContext] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     const fetchFields = async () => {
       try {
         const response = await api.get('/schema-registry');
         if (response.data && response.data.data) {
-          // Extract fields from the first schema (e.g. pacs.008) for the MVP report builder
           const schemas = response.data.data;
           if (schemas.length > 0) {
             const schema = schemas[0];
@@ -27,7 +29,7 @@ export const ReportBuilder = () => {
               dataSourceId: schema.dataSourceId?._id || schema.dataSourceId
             });
             const allFields = schema.fields.map((f: any) => ({
-              id: f._id || f.fieldName, // Fallback if _id is missing
+              id: f.path, // Use JSON path as the ID so Execution Engine knows how to extract data
               name: f.fieldName,
               type: f.dataType,
               path: f.path
@@ -52,7 +54,6 @@ export const ReportBuilder = () => {
 
     if (over && over.id === 'report-canvas') {
       const field = active.data.current;
-      // Don't add if already in columns
       if (field && !columns.find(c => c.id === field.id)) {
         const newCol = { ...field, aggregation: 'NONE', format: '' };
         setColumns([...columns, newCol]);
@@ -73,6 +74,34 @@ export const ReportBuilder = () => {
     if (selectedColumn?.id === id) setSelectedColumn(null);
   };
 
+  const getPayload = () => {
+    const payloadColumns = columns.map((c, idx) => ({
+      fieldId: c.id,
+      displayName: c.name,
+      aggregation: c.aggregation || 'NONE',
+      format: c.format || '',
+      order: idx,
+      sortDirection: c.sortDirection || 'NONE'
+    }));
+
+    const payloadFilters = columns
+      .filter(c => c.filterOperator)
+      .map(c => {
+        let val = c.filterValue;
+        if (c.filterOperator === 'BETWEEN') {
+          val = { min: c.filterValue, max: c.filterValueMax };
+        }
+        return {
+          fieldId: c.id,
+          operator: c.filterOperator,
+          value: val,
+          isRuntimePrompt: false
+        };
+      });
+
+    return { columns: payloadColumns, filters: payloadFilters };
+  };
+
   const handleSave = async () => {
     if (columns.length === 0) {
       alert('Please add at least one column to the report.');
@@ -84,19 +113,15 @@ export const ReportBuilder = () => {
     }
     setSaving(true);
     try {
+      const { columns: payloadColumns, filters: payloadFilters } = getPayload();
+      
       const response = await api.post('/report-builder', {
         reportName,
         description: 'Dynamically built report',
         dataSourceId: schemaContext.dataSourceId,
         schemaId: schemaContext.schemaId,
-        columns: columns.map((c, idx) => ({
-          fieldId: c.id,
-          displayName: c.name,
-          aggregation: c.aggregation || 'NONE',
-          format: c.format || '',
-          order: idx
-        })),
-        filters: [], // MVP: empty filters for now
+        columns: payloadColumns,
+        filters: payloadFilters,
         status: 'Draft'
       });
       if (response.data.success) {
@@ -108,6 +133,14 @@ export const ReportBuilder = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePreview = () => {
+    if (columns.length === 0) {
+      alert('Please add at least one column to preview.');
+      return;
+    }
+    setShowPreview(true);
   };
 
   return (
@@ -135,6 +168,8 @@ export const ReportBuilder = () => {
         <ReportCanvas 
           columns={columns} 
           onSelectColumn={setSelectedColumn} 
+          onPreview={handlePreview}
+          onSave={handleSave}
         />
         <PropertiesPanel 
           selectedColumn={selectedColumn} 
@@ -143,6 +178,17 @@ export const ReportBuilder = () => {
         />
         </div>
       </DndContext>
+
+      {showPreview && schemaContext && (
+        <PreviewConsole 
+          previewConfig={{
+            dataSourceId: schemaContext.dataSourceId,
+            schemaId: schemaContext.schemaId,
+            ...getPayload()
+          }}
+          onClose={() => setShowPreview(false)} 
+        />
+      )}
     </div>
   );
 };

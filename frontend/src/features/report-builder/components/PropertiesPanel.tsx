@@ -64,6 +64,65 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ selectedColumn
             className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
           />
         </div>
+
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">Sorting</h3>
+          <select 
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            value={selectedColumn.sortDirection || 'NONE'}
+            onChange={(e) => onUpdateColumn({ ...selectedColumn, sortDirection: e.target.value })}
+          >
+            <option value="NONE">None</option>
+            <option value="ASC">Ascending (A-Z, 0-9)</option>
+            <option value="DESC">Descending (Z-A, 9-0)</option>
+          </select>
+        </div>
+
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">Filtering</h3>
+          <select 
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md mb-2"
+            value={selectedColumn.filterOperator || ''}
+            onChange={(e) => onUpdateColumn({ ...selectedColumn, filterOperator: e.target.value, filterValue: '', filterValueMax: '' })}
+          >
+            <option value="">No Filter</option>
+            <option value="EQUALS">Equals</option>
+            <option value="NOT_EQUALS">Not Equals</option>
+            <option value="CONTAINS">Contains</option>
+            <option value="GREATER_THAN">Greater Than</option>
+            <option value="LESS_THAN">Less Than</option>
+            <option value="BETWEEN">Between / Range</option>
+          </select>
+
+          {selectedColumn.filterOperator && selectedColumn.filterOperator !== 'BETWEEN' && (
+            <input 
+              type="text" 
+              placeholder="Value"
+              value={selectedColumn.filterValue || ''}
+              onChange={(e) => onUpdateColumn({ ...selectedColumn, filterValue: e.target.value })}
+              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            />
+          )}
+
+          {selectedColumn.filterOperator === 'BETWEEN' && (
+            <div className="flex space-x-2">
+              <input 
+                type="text" 
+                placeholder="Min"
+                value={selectedColumn.filterValue || ''}
+                onChange={(e) => onUpdateColumn({ ...selectedColumn, filterValue: e.target.value })}
+                className="mt-1 w-1/2 px-3 py-2 border border-gray-300 rounded-md text-sm"
+              />
+              <input 
+                type="text" 
+                placeholder="Max"
+                value={selectedColumn.filterValueMax || ''}
+                onChange={(e) => onUpdateColumn({ ...selectedColumn, filterValueMax: e.target.value })}
+                className="mt-1 w-1/2 px-3 py-2 border border-gray-300 rounded-md text-sm"
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

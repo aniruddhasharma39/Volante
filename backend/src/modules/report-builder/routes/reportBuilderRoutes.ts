@@ -15,4 +15,7 @@ router.get('/:id', ReportBuilderController.getOne);
 // Create or update template
 router.post('/', authorize(['report.manage']), ReportBuilderController.save);
 
+// Update runtime filters
+router.put('/:id/filters', authorize(['report.manage']), ReportBuilderController.updateFilters);
+
 export default router;

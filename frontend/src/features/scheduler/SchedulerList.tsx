@@ -25,6 +25,8 @@ export const SchedulerList = () => {
   const [exportFormat, setExportFormat] = useState('PDF');
   const [saving, setSaving] = useState(false);
 
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchJobs();
     fetchReports();
@@ -57,28 +59,51 @@ export const SchedulerList = () => {
     try {
       await api.post(`/scheduler/${id}/toggle`);
       fetchJobs();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to toggle job', error);
+      alert(error.response?.data?.error || 'Failed to toggle job. Ensure you have the required permissions.');
     }
+  };
+
+  const handleEditClick = (job: Job) => {
+    setEditingJobId(job._id);
+    setJobName(job.jobName);
+    setCronExpression(job.cronExpression);
+    setRecipients(job.recipients.join(', '));
+    setExportFormat(job.exportFormat);
+    // the job.reportId can be an object or string depending on populate, let's assume it's populated
+    if (typeof job.reportId === 'object' && job.reportId) {
+       // @ts-ignore
+       setReportId(job.reportId._id);
+    }
+    setShowModal(true);
   };
 
   const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post('/scheduler', {
+      const payload = {
         jobName,
         reportId,
         cronExpression,
         recipients: recipients.split(',').map(r => r.trim()).filter(Boolean),
         exportFormat
-      });
+      };
+
+      if (editingJobId) {
+        await api.put(`/scheduler/${editingJobId}`, payload);
+      } else {
+        await api.post('/scheduler', payload);
+      }
+      
       setShowModal(false);
       setJobName('');
+      setEditingJobId(null);
       fetchJobs();
-    } catch (error) {
-      console.error('Failed to create job', error);
-      alert('Failed to create job.');
+    } catch (error: any) {
+      console.error('Failed to save job', error);
+      alert(error.response?.data?.error || 'Failed to save job.');
     } finally {
       setSaving(false);
     }
@@ -95,7 +120,11 @@ export const SchedulerList = () => {
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingJobId(null);
+              setJobName('');
+              setShowModal(true);
+            }}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
           >
             Create Schedule
@@ -137,7 +166,12 @@ export const SchedulerList = () => {
                     >
                       {job.status === 'Active' ? 'Pause' : 'Resume'}
                     </button>
-                    <button className="ml-4 text-sm font-medium text-gray-600 hover:text-gray-500">Edit</button>
+                    <button 
+                      onClick={() => handleEditClick(job)}
+                      className="ml-4 text-sm font-medium text-gray-600 hover:text-gray-500"
+                    >
+                      Edit
+                    </button>
                   </div>
                 </div>
               </div>
@@ -154,7 +188,7 @@ export const SchedulerList = () => {
       {showModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Create Schedule</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">{editingJobId ? 'Edit Schedule' : 'Create Schedule'}</h2>
             <form onSubmit={handleCreateJob} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Job Name</label>
@@ -186,7 +220,7 @@ export const SchedulerList = () => {
                 </select>
               </div>
               <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                <button type="submit" disabled={saving || reports.length === 0} className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:col-start-2 sm:text-sm disabled:opacity-50">
+                <button type="submit" disabled={saving} className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:col-start-2 sm:text-sm disabled:opacity-50">
                   {saving ? 'Saving...' : 'Save'}
                 </button>
                 <button type="button" onClick={() => setShowModal(false)} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:col-start-1 sm:text-sm">

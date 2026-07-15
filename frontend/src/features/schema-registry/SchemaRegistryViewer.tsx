@@ -26,6 +26,10 @@ export const SchemaRegistryViewer = () => {
     fetchSchemas();
   }, []);
 
+  const [previewSchema, setPreviewSchema] = useState<SchemaRegistry | null>(null);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
   const fetchSchemas = async () => {
     try {
       const res = await api.get('/schema-registry');
@@ -40,7 +44,6 @@ export const SchemaRegistryViewer = () => {
   const runDiscovery = async () => {
     setDiscovering(true);
     try {
-      // 1. Fetch available data sources
       const dsRes = await api.get('/data-sources');
       const dataSources = dsRes.data.data;
       if (dataSources.length === 0) {
@@ -49,7 +52,6 @@ export const SchemaRegistryViewer = () => {
         return;
       }
       
-      // 2. Discover schema for the first data source (MVP behavior)
       const mockJsonSample = {
         MsgId: "MSG-12345",
         TxId: "TX-98765",
@@ -74,6 +76,21 @@ export const SchemaRegistryViewer = () => {
       alert('Schema Discovery Failed');
     } finally {
       setDiscovering(false);
+    }
+  };
+
+  const handlePreview = async (schema: SchemaRegistry) => {
+    setPreviewSchema(schema);
+    setLoadingPreview(true);
+    try {
+      const res = await api.get(`/mock-data/${schema.schemaName}?limit=10`);
+      if (res.data.success) {
+        setPreviewData(res.data.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to load preview data', error);
+    } finally {
+      setLoadingPreview(false);
     }
   };
 
@@ -105,9 +122,17 @@ export const SchemaRegistryViewer = () => {
                 <h3 className="text-lg leading-6 font-medium text-gray-900">{schema.schemaName} <span className="text-sm text-gray-500 font-normal ml-2">(v{schema.version})</span></h3>
                 <p className="mt-1 max-w-2xl text-sm text-gray-500">Connected to: {schema.dataSourceId?.name}</p>
               </div>
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-sm font-medium text-blue-800">
-                {schema.fields.length} Fields
-              </span>
+              <div className="flex space-x-4 items-center">
+                <button 
+                  onClick={() => handlePreview(schema)}
+                  className="px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                >
+                  Preview Sample Data
+                </button>
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-sm font-medium text-blue-800">
+                  {schema.fields.length} Fields
+                </span>
+              </div>
             </div>
             <div className="border-t border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
@@ -138,6 +163,34 @@ export const SchemaRegistryViewer = () => {
           </div>
         ))}
       </div>
+
+      {previewSchema && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500 bg-opacity-75">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-medium text-gray-900">Sample Data Preview: {previewSchema.schemaName}</h3>
+              <button onClick={() => setPreviewSchema(null)} className="text-gray-400 hover:text-gray-500">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 flex-1 overflow-auto bg-gray-100">
+              {loadingPreview ? (
+                <div className="flex justify-center items-center h-40">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+                  <pre className="p-4 text-xs font-mono text-gray-800 overflow-x-auto whitespace-pre-wrap">
+                    {JSON.stringify(previewData, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

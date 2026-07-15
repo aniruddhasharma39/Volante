@@ -61,4 +61,20 @@ export class SchedulerService {
 
     return job;
   }
+
+  static async updateJob(jobId: string, data: any) {
+    const job = await ScheduledJob.findByIdAndUpdate(jobId, data, { new: true });
+    if (!job) throw new Error('Job not found');
+
+    if (job.status === 'Active') {
+      this.scheduleJob(job);
+    } else {
+      if (this.tasks.has(job.id)) {
+        this.tasks.get(job.id)?.stop();
+        this.tasks.delete(job.id);
+      }
+    }
+
+    return job;
+  }
 }

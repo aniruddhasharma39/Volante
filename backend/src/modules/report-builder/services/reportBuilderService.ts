@@ -24,4 +24,14 @@ export class ReportBuilderService {
   static async getAllReportDefinitions() {
     return await ReportDefinition.find().populate('dataSourceId schemaId');
   }
+
+  static async updateFilters(reportId: string, filters: any[]) {
+    const report = await ReportDefinition.findById(reportId);
+    if (!report) throw new Error('Report not found');
+    
+    // We overwrite or append runtime filters. For now, let's overwrite existing report filters
+    report.filters = filters;
+    await report.save();
+    return report;
+  }
 }

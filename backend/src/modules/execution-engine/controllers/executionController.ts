@@ -13,4 +13,14 @@ export class ExecutionController {
       next(error);
     }
   }
+
+  static async preview(req: Request, res: Response, next: NextFunction) {
+    try {
+      const config = req.body;
+      const result = await ExecutionEngine.executePreview(config);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

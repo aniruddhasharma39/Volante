@@ -4,9 +4,11 @@ import { useDroppable } from '@dnd-kit/core';
 interface ReportCanvasProps {
   columns: any[];
   onSelectColumn: (col: any) => void;
+  onPreview: () => void;
+  onSave: () => void;
 }
 
-export const ReportCanvas: React.FC<ReportCanvasProps> = ({ columns, onSelectColumn }) => {
+export const ReportCanvas: React.FC<ReportCanvasProps> = ({ columns, onSelectColumn, onPreview, onSave }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: 'report-canvas',
   });
@@ -17,8 +19,8 @@ export const ReportCanvas: React.FC<ReportCanvasProps> = ({ columns, onSelectCol
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-900">Untitled Report</h2>
           <div className="space-x-2">
-            <button className="px-4 py-2 border border-gray-300 rounded shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Preview</button>
-            <button className="px-4 py-2 border border-transparent rounded shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Save Report</button>
+            <button onClick={onPreview} className="px-4 py-2 border border-gray-300 rounded shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Preview</button>
+            <button onClick={onSave} className="px-4 py-2 border border-transparent rounded shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Save Report</button>
           </div>
         </div>
       </div>
